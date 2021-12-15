@@ -22,6 +22,8 @@ int xkb_base = -1;
 int xkb_current_group;
 int shape_base = -1;
 
+extern xcb_window_t desktop_window;
+
 /* After mapping/unmapping windows, a notify event is generated. However, we don’t want it,
    since it’d trigger an infinite loop of switching between the different windows when
    changing workspaces */
@@ -137,7 +139,18 @@ static void handle_enter_notify(xcb_enter_notify_event_t *event) {
         DLOG("Event ignored\n");
         return;
     }
-
+    if(desktop_window != XCB_NONE && event->event == desktop_window){
+        /* This check stops the desktop window from stealing the focus when a floating window
+         * is focused through a command/keybinding but the pointer is still on the desktop window */
+        if (event->detail==XCB_NOTIFY_DETAIL_NONLINEAR){
+            if(config.disable_focus_follows_mouse==false){
+                Con *ws = con_get_workspace(focused);
+                con_focus(ws);
+                tree_render();
+            }
+        } else
+            return;
+    }
     bool enter_child = false;
     /* Get container by frame or by child window */
     if ((con = con_by_frame_id(event->event)) == NULL) {

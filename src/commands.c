@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
+extern xcb_window_t desktop_window;
+
 // Macros to make the YAJL API a bit easier to use.
 #define y(x, ...) (cmd_output->json_gen != NULL ? yajl_gen_##x(cmd_output->json_gen, ##__VA_ARGS__) : 0)
 #define ystr(str) (cmd_output->json_gen != NULL ? yajl_gen_string(cmd_output->json_gen, (unsigned char *)str, strlen(str)) : 0)
@@ -1401,6 +1403,10 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
 
     Con *ws = con_get_workspace(focused);
     Con *current;
+    if (strcmp(window_mode, "tiling")==0 && TAILQ_EMPTY(&(ws->nodes_head)) && desktop_window != XCB_NONE){
+        con_focus(ws);
+        goto end;
+    }
     bool success = false;
     TAILQ_FOREACH (current, &(ws->focus_head), focused) {
         if ((to_floating && current->type != CT_FLOATING_CON) ||
@@ -1411,7 +1417,7 @@ void cmd_focus_window_mode(I3_CMD, const char *window_mode) {
         success = true;
         break;
     }
-
+    end:
     if (success) {
         cmd_output->needs_tree_render = true;
         ysuccess(true);

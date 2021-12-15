@@ -9,6 +9,8 @@
  */
 #include "all.h"
 
+extern xcb_window_t desktop_window;
+
 /*
  * Match frame and window depth. This is needed because X will refuse to reparent a
  * window whose background is ParentRelative under a window with a different depth.
@@ -241,6 +243,16 @@ void manage_window(xcb_window_t window, xcb_get_window_attributes_cookie_t cooki
 
     /* read the preferred _NET_WM_WINDOW_TYPE atom */
     cwindow->window_type = xcb_get_preferred_window_type(type_reply);
+
+   /* map _NET_WM_WINDOW_TYPE_DESKTOP windows and receive focus events, but don't manage them */
+    if (xcb_reply_contains_atom(type_reply, A__NET_WM_WINDOW_TYPE_DESKTOP)) {
+        desktop_window = window;
+        xcb_map_window(conn, window);
+        values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
+        xcb_change_window_attributes(conn, window, XCB_CW_EVENT_MASK, values);
+        xcb_flush(conn);
+        goto geom_out;
+    }
 
     /* Where to start searching for a container that swallows the new one? */
     Con *search_at = croot;

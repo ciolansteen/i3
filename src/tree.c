@@ -12,6 +12,8 @@
 struct Con *croot;
 struct Con *focused;
 
+xcb_window_t desktop_window = XCB_NONE;
+
 struct all_cons_head all_cons = TAILQ_HEAD_INITIALIZER(all_cons);
 
 /*
